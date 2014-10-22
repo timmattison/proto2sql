@@ -10,15 +10,21 @@ import java.util.List;
  * Created by timmattison on 10/22/14.
  */
 public class ConvertToPostgresql implements ConvertToSql {
-    public static final String VARCHAR_255 = "varchar(255)";
+    public static final String VARCHAR_255 = "varchar";
+    public static final String TEXT = "text";
     public static final String BIGINT = "bigint";
     public static final String NOT_NULL = "not null";
     public static final String SQL_ARRAY = "[]";
+    public static final String BOOLEAN = "boolean";
+
+    public static final String PRIMARY_KEY = "primary key";
+    public static final String ID = "id";
 
     @Override
     public List<String> generateSql(Message message) {
         // Create an output array list and an array list for our enums
         List<String> output = new ArrayList<String>();
+        List<String> embedded = new ArrayList<String>();
         List<String> enums = new ArrayList<String>();
 
         // Get the descriptor
@@ -27,13 +33,41 @@ public class ConvertToPostgresql implements ConvertToSql {
         // Get the type name
         String protobufTypeName = descriptor.getName();
 
-        // Create a new string builder to hold our SQL
-        StringBuilder stringBuilder = new StringBuilder();
+        // Loop through all of the fields
+        StringBuilder stringBuilder = innerGenerateSql(embedded, enums, descriptor, protobufTypeName);
 
-        // Start with an empty separator
+        // Did we create any enums?
+        if (enums.size() != 0) {
+            // Yes, add them to the output before the table definition
+            output.addAll(enums);
+        }
+
+        // Did we build a table definition?
+        if (stringBuilder.length() != 0) {
+            // Yes, close it and add it to the output
+            stringBuilder.append("\n);");
+
+            output.add(stringBuilder.toString());
+        }
+
+        // Did we encounter any embedded messages?
+        if (embedded.size() != 0) {
+            // Yes, add them to the output after the table definition
+            output.addAll(embedded);
+        }
+
+        return output;
+    }
+
+    private StringBuilder innerGenerateSql(List<String> embedded, List<String> enums, Descriptors.Descriptor descriptor, String protobufTypeName) {
+        // No parent
+        return innerGenerateSql(null, embedded, enums, descriptor, protobufTypeName);
+    }
+
+    private StringBuilder innerGenerateSql(String parent, List<String> embedded, List<String> enums, Descriptors.Descriptor descriptor, String protobufTypeName) {
+        StringBuilder stringBuilder = new StringBuilder();
         String separator = "";
 
-        // Loop through all of the fields
         for (Descriptors.FieldDescriptor field : descriptor.getFields()) {
             // We don't know the SQL type yet
             String sqlType = null;
@@ -48,8 +82,12 @@ public class ConvertToPostgresql implements ConvertToSql {
             } else if (INT64.equals(typeName)) {
                 // Int64 type, convert it to a bigint
                 sqlType = BIGINT;
+            } else if (BOOL.equals(typeName)) {
+                // Bool type, convert it to a boolean
+                sqlType = BOOLEAN;
             } else if (MESSAGE.equals(typeName)) {
-                // TODO - Message, we're ignoring embedded messages for now
+                // Treat this as text
+                sqlType = TEXT;
             } else if (ENUM.equals(typeName)) {
                 // Enum type, create the SQL for the enum
                 enums.add(createEnum(field));
@@ -71,8 +109,24 @@ public class ConvertToPostgresql implements ConvertToSql {
             if (stringBuilder.length() == 0) {
                 // No, create it now
                 stringBuilder.append("create table ");
+
+                if (parent != null) {
+                    stringBuilder.append(parent);
+                    stringBuilder.append("_");
+                }
+
                 stringBuilder.append(protobufTypeName);
                 stringBuilder.append(" (");
+
+                if (parent != null) {
+                    stringBuilder.append("\n  ");
+                    stringBuilder.append(parent);
+                    stringBuilder.append("_id ");
+                    stringBuilder.append(VARCHAR_255);
+                    stringBuilder.append(" primary key references ");
+                    stringBuilder.append(parent);
+                    stringBuilder.append("(id),");
+                }
             }
 
             // Add the separator, name, and type
@@ -93,29 +147,20 @@ public class ConvertToPostgresql implements ConvertToSql {
 
             // Is this field required?
             if (field.isRequired()) {
-                // Yes, make it NOT NULL
-                stringBuilder.append(NOT_NULL);
+                // Yes, is it the ID field?
+                if (ID.equals(name)) {
+                    stringBuilder.append(PRIMARY_KEY);
+                } else {
+                    // No, make it NOT NULL
+                    stringBuilder.append(NOT_NULL);
+                }
             }
 
             // Update the separator for the next field
             separator = ",";
         }
 
-        // Did we create any enums?
-        if (enums.size() != 0) {
-            // Yes, add them to the output before the table definition
-            output.addAll(enums);
-        }
-
-        // Did we build a table definition?
-        if (stringBuilder.length() != 0) {
-            // Yes, close it and add it to the output
-            stringBuilder.append("\n);");
-
-            output.add(stringBuilder.toString());
-        }
-
-        return output;
+        return stringBuilder;
     }
 
     private static String createEnum(Descriptors.FieldDescriptor field) {
