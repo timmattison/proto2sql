@@ -7,6 +7,7 @@ import com.google.protobuf.UnmodifiableLazyStringList;
 import com.googlecode.protobuf.format.JsonFormat;
 import org.postgresql.jdbc4.Jdbc4Array;
 
+import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
 
     private final DataSource dataSource;
 
+    @Inject
     public PostgresqlProtobufPersistence(DataSource dataSource) {
         this.dataSource = dataSource;
     }
