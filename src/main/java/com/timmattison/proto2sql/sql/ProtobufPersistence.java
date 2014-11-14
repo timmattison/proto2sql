@@ -1,5 +1,6 @@
 package com.timmattison.proto2sql.sql;
 
+import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.googlecode.protobuf.format.JsonFormat;
 
@@ -41,4 +42,33 @@ public interface ProtobufPersistence {
      * @throws SQLException
      */
     public void update(Message message, String idName, String id) throws SQLException;
+
+    /**
+     * DELETEs all protobufs of a certain type from the database
+     *
+     * @param descriptor the descriptor for the protobuf
+     * @throws SQLException
+     */
+    public void deleteAll(Descriptors.Descriptor descriptor) throws SQLException;
+
+    /**
+     * Starts a transaction
+     *
+     * @throws SQLException
+     */
+    public void startTransaction() throws SQLException;
+
+    /**
+     * Rolls a transaction back
+     *
+     * @throws SQLException
+     */
+    public void rollback() throws SQLException;
+
+    /**
+     * Commits a transaction
+     *
+     * @throws SQLException
+     */
+    public void commit() throws SQLException;
 }
