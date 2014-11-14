@@ -32,8 +32,13 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
     private static final String UPDATE = "UPDATE ";
     private static final String SET = " SET ";
     private static final String EQUALS = " = ";
+    private static final String DELETE_FROM = "DELETE FROM ";
+    public static final String ROLLBACK = "ROLLBACK";
+    public static final String COMMIT = "COMMIT";
 
     private final DataSource dataSource;
+
+    private Connection currentConnection;
 
     @Inject
     public PostgresqlProtobufPersistence(DataSource dataSource) {
@@ -462,4 +467,59 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
         }
     }
 
+    @Override
+    public void deleteAll(Descriptors.Descriptor descriptor) throws SQLException {
+        String protobufTypeName = getTableName(descriptor);
+
+        // Start building the DELETE statement
+        StringBuilder deleteSql = new StringBuilder();
+        deleteSql.append(DELETE_FROM);
+        deleteSql.append(protobufTypeName);
+
+        PreparedStatement preparedStatement = getConnection().prepareStatement(deleteSql.toString());
+        preparedStatement.execute();
+    }
+
+    private Connection getConnection() throws SQLException {
+        if (currentConnection == null) {
+            currentConnection = dataSource.getConnection();
+        }
+
+        return currentConnection;
+    }
+
+    @Override
+    public void startTransaction() throws SQLException {
+        getConnection().setAutoCommit(false);
+    }
+
+    @Override
+    public void rollback() throws SQLException {
+        throwExceptionIfTransactionNotStarted(ROLLBACK);
+
+        // Rollback and close the connection
+        getConnection().rollback();
+        getConnection().close();
+        currentConnection = null;
+    }
+
+    @Override
+    public void commit() throws SQLException {
+        throwExceptionIfTransactionNotStarted(COMMIT);
+
+        // Commit and close the connection
+        getConnection().commit();
+        getConnection().close();
+        currentConnection = null;
+    }
+
+    private void throwExceptionIfTransactionNotStarted(String errorType) throws SQLException {
+        if (currentConnection == null) {
+            throw new UnsupportedOperationException(errorType + " attempted without a connection");
+        }
+
+        if (currentConnection.getAutoCommit() == true) {
+            throw new UnsupportedOperationException(errorType + " attempted when auto-commit was on");
+        }
+    }
 }
