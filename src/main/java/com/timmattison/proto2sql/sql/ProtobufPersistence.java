@@ -26,22 +26,39 @@ public interface ProtobufPersistence {
     /**
      * INSERTs a protobuf into a database
      *
-     * @param message the protobuf itself
-     * @param idName  the field to use as its ID
-     * @param id      the value of its ID
+     * @param message         the protobuf itself
+     * @param fieldDescriptor the field to use as its ID
      * @throws SQLException
      */
-    public void insert(Message message, String idName, String id) throws SQLException;
+    public void insert(Message message, Descriptors.FieldDescriptor fieldDescriptor) throws SQLException;
 
     /**
-     * UPDATEs a protobuf in a database
+     * UPDATEs a protobuf in a database where the ID field has not changed
      *
-     * @param message the protobuf itself
-     * @param idName  the field to use as its ID
-     * @param id      the value of its ID
+     * @param message         the protobuf itself
+     * @param fieldDescriptor the field to use as its ID
      * @throws SQLException
      */
-    public void update(Message message, String idName, String id) throws SQLException;
+    public void update(Message message, Descriptors.FieldDescriptor fieldDescriptor) throws SQLException;
+
+    /**
+     * UPDATEs a protobuf in a database where the ID field has changed
+     *
+     * @param message         the protobuf itself
+     * @param fieldDescriptor the field to use as its ID
+     * @param previousId      the ID of the object before the update
+     * @throws SQLException
+     */
+    public void update(Message message, Descriptors.FieldDescriptor fieldDescriptor, Object previousId) throws SQLException;
+
+    /**
+     * DELETEs one protobuf of a certain type from the database
+     *
+     * @param message         the protobuf itself
+     * @param fieldDescriptor the field to use as its ID
+     * @throws SQLException
+     */
+    public void delete(Message message, Descriptors.FieldDescriptor fieldDescriptor) throws SQLException;
 
     /**
      * DELETEs all protobufs of a certain type from the database

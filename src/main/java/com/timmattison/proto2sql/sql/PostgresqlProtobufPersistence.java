@@ -16,8 +16,7 @@ import java.util.List;
 /**
  * Created by timmattison on 11/4/14.
  */
-public class PostgresqlProtobufPersistence implements ProtobufPersistence {
-    private static final String DEFAULT_ID_NAME = "id";
+public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence implements ProtobufPersistence {
     private static final String VALUES = " VALUES ";
     private static final String CAST = "CAST(";
     private static final String AS = " AS ";
@@ -45,14 +44,8 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
         this.dataSource = dataSource;
     }
 
-    public List<Message> select(String idName, String id, Message.Builder builder) throws SQLException, JsonFormat.ParseException {
-        // Get the name of the table that this protobuf resides in in the database
-        String tableName = getTableName(builder.getDescriptorForType());
-
-        if (id != null) {
-            idName = setDefaultIdIfNecessary(idName);
-        }
-
+    @Override
+    public List<Message> innerSelect(String idName, String id, Message.Builder builder, String tableName) throws SQLException, JsonFormat.ParseException {
         // Get a connection to the database and prepare the statement
         Connection connection = dataSource.getConnection();
 
@@ -183,31 +176,8 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
         }
     }
 
-    private static String setDefaultIdIfNecessary(String idName) {
-        // Did they specify the ID name?
-        if (idName == null) {
-            // No, use the default ID name
-            idName = DEFAULT_ID_NAME;
-        }
-
-        return idName;
-    }
-
-    private static String getTableName(Descriptors.Descriptor descriptor) {
-        // Get the table name by removing "domain." from the full name and then by replacing all dots with underscores
-        return descriptor.getFullName().replaceFirst("domain.", "").replaceAll("\\.", "_");
-    }
-
-    public void insert(Message message, String idName, String id) throws SQLException {
-        // Set the default ID name if necessary
-        idName = setDefaultIdIfNecessary(idName);
-
-        // Get the descriptor
-        Descriptors.Descriptor descriptor = message.getDescriptorForType();
-
-        // Get the type name
-        String protobufTypeName = getTableName(descriptor);
-
+    @Override
+    public void innerInsert(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName) throws SQLException {
         // Start building the INSERT statement
         StringBuilder insertSql = new StringBuilder();
         insertSql.append(INSERT_INTO);
@@ -223,20 +193,22 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
 
         String separator = "";
 
+        /* TODO - See if we still need this
         // Is the ID name a field that is not already in the object?
         if (idSpecifiedAndNotNativeField(idName, descriptor)) {
             // Yes, this means that it could be a child object.  We need to add in the ID field since it is not in the protobuf.
             fieldNames.append(separator);
             fieldPlaceholders.append(separator);
 
-            fieldNames.append(idName);
+            fieldNames.append(fieldDescriptor.getName());
             fieldPlaceholders.append(VARIABLE);
 
             separator = ", ";
         }
+        */
 
         // Loop through the fields
-        for (Descriptors.FieldDescriptor field : descriptor.getFields()) {
+        for (Descriptors.FieldDescriptor field : message.getDescriptorForType().getFields()) {
             // Get the name of the field type
             String typeName = field.getType().name();
 
@@ -278,6 +250,7 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
 
             int counter = 1;
 
+            /* TODO - See if we still need this
             // Is the ID name a field that is not already in the object?
             if (idSpecifiedAndNotNativeField(idName, descriptor)) {
                 // Yes, this is always the first parameter that needs to be bound
@@ -286,9 +259,10 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
                 // Move onto the next position
                 counter++;
             }
+            */
 
             // Bind all of the parameters
-            bindParameters(message, descriptor, connection, preparedStatement, counter);
+            bindParameters(message, message.getDescriptorForType(), connection, preparedStatement, counter);
 
             // Execute the query
             preparedStatement.execute();
@@ -299,31 +273,13 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
         }
     }
 
-    public void update(Message message, String idName, String id) throws SQLException {
-        // Did they specify an ID?
-        if (id == null) {
-            // No, they cannot do an update without an ID
+    @Override
+    public void innerUpdate(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName) throws SQLException {
+        innerUpdate(message, fieldDescriptor, protobufTypeName, null);
+    }
 
-            // Is there an ID field?
-            Descriptors.FieldDescriptor idField = message.getDescriptorForType().findFieldByName(DEFAULT_ID_NAME);
-
-            if (idField == null) {
-                throw new UnsupportedOperationException("ID cannot be NULL on an update");
-            }
-
-            // Find the ID
-            id = (String) message.getField(idField);
-        }
-
-        // Set the default ID name if necessary
-        idName = setDefaultIdIfNecessary(idName);
-
-        // Get the descriptor
-        Descriptors.Descriptor descriptor = message.getDescriptorForType();
-
-        // Get the type name
-        String protobufTypeName = getTableName(descriptor);
-
+    @Override
+    public void innerUpdate(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName, Object previousId) throws SQLException {
         // Start building the UPDATE statement
         StringBuilder updateSql = new StringBuilder();
         updateSql.append(UPDATE);
@@ -333,7 +289,7 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
         String separator = "";
 
         // Loop through all of the fields
-        for (Descriptors.FieldDescriptor field : descriptor.getFields()) {
+        for (Descriptors.FieldDescriptor field : message.getDescriptorForType().getFields()) {
             // Get the field type
             String typeName = field.getType().name();
 
@@ -359,7 +315,7 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
         }
 
         // Add the WHERE clause
-        idWhereClause(idName, updateSql);
+        idWhereClause(fieldDescriptor.getName(), updateSql);
 
         // Get a connection to the database and prepare the statement
         Connection connection = dataSource.getConnection();
@@ -370,10 +326,14 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
             int counter = 1;
 
             // Loop through all of the parameters
-            counter = bindParameters(message, descriptor, connection, preparedStatement, counter);
+            counter = bindParameters(message, message.getDescriptorForType(), connection, preparedStatement, counter);
 
             // Bind the ID as the last parameter
-            preparedStatement.setObject(counter, id);
+            if (previousId != null) {
+                preparedStatement.setObject(counter, previousId);
+            } else {
+                preparedStatement.setObject(counter, message.getField(fieldDescriptor));
+            }
 
             // Execute the query
             preparedStatement.execute();
@@ -468,9 +428,7 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
     }
 
     @Override
-    public void deleteAll(Descriptors.Descriptor descriptor) throws SQLException {
-        String protobufTypeName = getTableName(descriptor);
-
+    public void innerDeleteAll(Descriptors.Descriptor descriptor, String protobufTypeName) throws SQLException {
         // Start building the DELETE statement
         StringBuilder deleteSql = new StringBuilder();
         deleteSql.append(DELETE_FROM);
@@ -478,6 +436,11 @@ public class PostgresqlProtobufPersistence implements ProtobufPersistence {
 
         PreparedStatement preparedStatement = getConnection().prepareStatement(deleteSql.toString());
         preparedStatement.execute();
+    }
+
+    @Override
+    protected void innerDelete(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     private Connection getConnection() throws SQLException {
