@@ -1,0 +1,8 @@
+option java_package = "com.timmattison.proto2sql";
+option java_outer_classname = "TestProtobufs";
+
+message SearchRequest {
+  required string query = 1;
+  optional int32 page_number = 2;
+  optional int32 result_per_page = 3;
+}
