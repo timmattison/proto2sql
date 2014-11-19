@@ -46,8 +46,8 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
 
     @Override
     public List<Message> innerSelect(String idName, String id, Message.Builder builder, String tableName) throws SQLException, JsonFormat.ParseException {
-        // Get a connection to the database and prepare the statement
-        Connection connection = dataSource.getConnection();
+        // Get a connection to the database and prepare the statement.
+        Connection connection = getNewOrExistingConnection();
 
         try {
             // Get the result set
@@ -67,9 +67,7 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
 
             return messages;
         } finally {
-            if (connection != null) {
-                connection.close();
-            }
+            closeIfNecessary(connection);
         }
     }
 
@@ -242,8 +240,8 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         insertSql.append(VALUES);
         insertSql.append(fieldPlaceholders);
 
-        // Get a connection to the database and prepare the statement
-        Connection connection = dataSource.getConnection();
+        // Get a connection to the database and prepare the statement.
+        Connection connection = getNewOrExistingConnection();
 
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(insertSql.toString());
@@ -267,9 +265,7 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
             // Execute the query
             preparedStatement.execute();
         } finally {
-            if (connection != null) {
-                connection.close();
-            }
+            closeIfNecessary(connection);
         }
     }
 
@@ -317,8 +313,8 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         // Add the WHERE clause
         idWhereClause(fieldDescriptor.getName(), updateSql);
 
-        // Get a connection to the database and prepare the statement
-        Connection connection = dataSource.getConnection();
+        // Get a connection to the database and prepare the statement.
+        Connection connection = getNewOrExistingConnection();
 
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(updateSql.toString());
@@ -338,9 +334,21 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
             // Execute the query
             preparedStatement.execute();
         } finally {
-            if (connection != null) {
-                connection.close();
-            }
+            closeIfNecessary(connection);
+        }
+    }
+
+    private void closeIfNecessary(Connection connection) throws SQLException {
+        // Is there a connection?
+        if (connection == null) {
+            // No, just return
+            return;
+        }
+
+        // Are we inside a transaction?
+        if (connection.getAutoCommit() == false) {
+            // No, we can close the connection
+            connection.close();
         }
     }
 
@@ -434,16 +442,27 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         deleteSql.append(DELETE_FROM);
         deleteSql.append(protobufTypeName);
 
-        PreparedStatement preparedStatement = getConnection().prepareStatement(deleteSql.toString());
+        PreparedStatement preparedStatement = getNewOrExistingConnection().prepareStatement(deleteSql.toString());
         preparedStatement.execute();
     }
 
     @Override
-    protected void innerDelete(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    protected void innerDelete(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName) throws SQLException {
+        // Start building the DELETE statement
+        StringBuilder deleteSql = new StringBuilder();
+        deleteSql.append(DELETE_FROM);
+        deleteSql.append(protobufTypeName);
+
+        // Add the WHERE clause
+        idWhereClause(fieldDescriptor.getName(), deleteSql);
+
+        // Get a connection to the database and prepare the statement
+        PreparedStatement preparedStatement = getNewOrExistingConnection().prepareStatement(deleteSql.toString());
+        preparedStatement.setObject(1, message.getField(fieldDescriptor));
+        preparedStatement.execute();
     }
 
-    private Connection getConnection() throws SQLException {
+    private Connection getNewOrExistingConnection() throws SQLException {
         if (currentConnection == null) {
             currentConnection = dataSource.getConnection();
         }
@@ -453,7 +472,7 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
 
     @Override
     public void startTransaction() throws SQLException {
-        getConnection().setAutoCommit(false);
+        getNewOrExistingConnection().setAutoCommit(false);
     }
 
     @Override
@@ -461,8 +480,8 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         throwExceptionIfTransactionNotStarted(ROLLBACK);
 
         // Rollback and close the connection
-        getConnection().rollback();
-        getConnection().close();
+        getNewOrExistingConnection().rollback();
+        getNewOrExistingConnection().close();
         currentConnection = null;
     }
 
@@ -471,8 +490,8 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         throwExceptionIfTransactionNotStarted(COMMIT);
 
         // Commit and close the connection
-        getConnection().commit();
-        getConnection().close();
+        getNewOrExistingConnection().commit();
+        getNewOrExistingConnection().close();
         currentConnection = null;
     }
 

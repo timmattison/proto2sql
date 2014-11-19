@@ -125,6 +125,6 @@ public abstract class AbstractProtobufPersistence implements ProtobufPersistence
 
     protected abstract void innerDeleteAll(Descriptors.Descriptor descriptor, String protobufTypeName) throws SQLException;
 
-    protected abstract void innerDelete(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName);
+    protected abstract void innerDelete(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName) throws SQLException;
 
 }
