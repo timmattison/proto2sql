@@ -32,8 +32,8 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
     private static final String SET = " SET ";
     private static final String EQUALS = " = ";
     private static final String DELETE_FROM = "DELETE FROM ";
-    public static final String ROLLBACK = "ROLLBACK";
-    public static final String COMMIT = "COMMIT";
+    private static final String ROLLBACK = "ROLLBACK";
+    private static final String COMMIT = "COMMIT";
 
     private final DataSource dataSource;
 
@@ -270,12 +270,12 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
     }
 
     @Override
-    public void innerUpdate(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName) throws SQLException {
+    protected void innerUpdate(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName) throws SQLException {
         innerUpdate(message, fieldDescriptor, protobufTypeName, null);
     }
 
     @Override
-    public void innerUpdate(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName, Object previousId) throws SQLException {
+    protected void innerUpdate(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName, Object previousId) throws SQLException {
         // Start building the UPDATE statement
         StringBuilder updateSql = new StringBuilder();
         updateSql.append(UPDATE);

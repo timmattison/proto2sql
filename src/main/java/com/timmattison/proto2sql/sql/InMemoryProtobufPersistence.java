@@ -14,7 +14,7 @@ import java.util.Map;
  * Created by timmattison on 11/4/14.
  */
 public class InMemoryProtobufPersistence extends AbstractProtobufPersistence implements ProtobufPersistence {
-    public Map<String, List<Message>> protobufs = new HashMap<String, List<Message>>();
+    private final Map<String, List<Message>> protobufs = new HashMap<String, List<Message>>();
 
     @Override
     public List<Message> innerSelect(String idName, String id, Message.Builder builder, String protobufTypeName) throws SQLException, JsonFormat.ParseException {

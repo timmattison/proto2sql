@@ -20,7 +20,7 @@ import java.util.Random;
 public abstract class TestProtobufPersistence {
     protected ProtobufPersistence protobufPersistence;
     protected Random random;
-    private int insertCount = 100;
+    private final int insertCount = 100;
 
     @Before
     public void setup() throws Exception {

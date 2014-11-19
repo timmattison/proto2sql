@@ -11,7 +11,7 @@ import java.util.List;
  * Created by timmattison on 11/14/14.
  */
 public abstract class AbstractProtobufPersistence implements ProtobufPersistence {
-    protected static final String DEFAULT_ID_NAME = "id";
+    private static final String DEFAULT_ID_NAME = "id";
 
     @Override
     public void delete(Message message, Descriptors.FieldDescriptor fieldDescriptor) throws SQLException {

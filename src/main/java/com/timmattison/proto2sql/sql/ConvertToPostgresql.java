@@ -10,16 +10,16 @@ import java.util.List;
  * Created by timmattison on 10/22/14.
  */
 public class ConvertToPostgresql implements ConvertToSql {
-    public static final String VARCHAR_255 = "varchar";
-    public static final String TEXT = "text";
-    public static final String BIGINT = "bigint";
-    public static final String INTEGER = "integer";
-    public static final String NOT_NULL = "not null";
-    public static final String SQL_ARRAY = "[]";
-    public static final String BOOLEAN = "boolean";
+    private static final String VARCHAR_255 = "varchar";
+    private static final String TEXT = "text";
+    private static final String BIGINT = "bigint";
+    private static final String INTEGER = "integer";
+    private static final String NOT_NULL = "not null";
+    private static final String SQL_ARRAY = "[]";
+    private static final String BOOLEAN = "boolean";
 
-    public static final String PRIMARY_KEY = "primary key";
-    public static final String ID = "id";
+    private static final String PRIMARY_KEY = "primary key";
+    private static final String ID = "id";
 
     @Override
     public List<String> generateSql(Message message) {
