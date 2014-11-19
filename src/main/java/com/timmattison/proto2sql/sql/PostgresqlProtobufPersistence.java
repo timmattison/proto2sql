@@ -439,8 +439,19 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
     }
 
     @Override
-    protected void innerDelete(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    protected void innerDelete(Message message, Descriptors.FieldDescriptor fieldDescriptor, String protobufTypeName) throws SQLException {
+        // Start building the DELETE statement
+        StringBuilder deleteSql = new StringBuilder();
+        deleteSql.append(DELETE_FROM);
+        deleteSql.append(protobufTypeName);
+
+        // Add the WHERE clause
+        idWhereClause(fieldDescriptor.getName(), deleteSql);
+
+        // Get a connection to the database and prepare the statement
+        PreparedStatement preparedStatement = getConnection().prepareStatement(deleteSql.toString());
+        preparedStatement.setObject(1, message.getField(fieldDescriptor));
+        preparedStatement.execute();
     }
 
     private Connection getConnection() throws SQLException {

@@ -13,6 +13,7 @@ public interface ConvertToSql {
      */
     public static final String STRING = "STRING";
     public static final String INT64 = "INT64";
+    public static final String INT32 = "INT32";
     public static final String MESSAGE = "MESSAGE";
     public static final String ENUM = "ENUM";
     public static final String BOOL = "BOOL";

@@ -2,8 +2,8 @@ package com.timmattison.proto2sql;
 
 import com.google.protobuf.Message;
 import com.googlecode.protobuf.format.JsonFormat;
-import com.timmattison.proto2sql.sql.InMemoryProtobufPersistence;
 import com.timmattison.proto2sql.sql.ProtobufPersistence;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,11 +23,18 @@ public abstract class TestProtobufPersistence {
     private int insertCount = 100;
 
     @Before
-    public void setup() {
+    public void setup() throws Exception {
         innerSetup();
-   }
+    }
 
-    protected abstract void innerSetup();
+    @After
+    public void teardown() {
+        innerTeardown();
+    }
+
+    protected abstract void innerTeardown();
+
+    protected abstract void innerSetup() throws Exception;
 
     @Test
     public void testInsertThenSelect() throws SQLException, JsonFormat.ParseException {

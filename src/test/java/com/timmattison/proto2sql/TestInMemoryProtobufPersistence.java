@@ -9,6 +9,11 @@ import java.util.Random;
  */
 public class TestInMemoryProtobufPersistence extends TestProtobufPersistence {
     @Override
+    protected void innerTeardown() {
+        // Do nothing
+    }
+
+    @Override
     protected void innerSetup() {
         protobufPersistence = new InMemoryProtobufPersistence();
         random = new Random(0);

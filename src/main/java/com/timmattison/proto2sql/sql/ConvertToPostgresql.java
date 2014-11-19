@@ -13,6 +13,7 @@ public class ConvertToPostgresql implements ConvertToSql {
     public static final String VARCHAR_255 = "varchar";
     public static final String TEXT = "text";
     public static final String BIGINT = "bigint";
+    public static final String INTEGER = "integer";
     public static final String NOT_NULL = "not null";
     public static final String SQL_ARRAY = "[]";
     public static final String BOOLEAN = "boolean";
@@ -82,6 +83,9 @@ public class ConvertToPostgresql implements ConvertToSql {
             } else if (INT64.equals(typeName)) {
                 // Int64 type, convert it to a bigint
                 sqlType = BIGINT;
+            } else if (INT32.equals(typeName)) {
+                // Int32 type, convert it to a bigint
+                sqlType = INTEGER;
             } else if (BOOL.equals(typeName)) {
                 // Bool type, convert it to a boolean
                 sqlType = BOOLEAN;
