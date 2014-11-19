@@ -92,24 +92,6 @@ public abstract class AbstractProtobufPersistence implements ProtobufPersistence
         innerUpdate(message, fieldDescriptor, protobufTypeName);
     }
 
-    private String getDefaultIdIfNecessary(Message message, String id) {
-        // Did they specify an ID?
-        if (id == null) {
-            // No, they cannot do an update without an ID
-
-            // Is there an ID field?
-            Descriptors.FieldDescriptor idField = message.getDescriptorForType().findFieldByName(DEFAULT_ID_NAME);
-
-            if (idField == null) {
-                throw new UnsupportedOperationException("ID cannot be NULL on an update");
-            }
-
-            // Find the ID
-            id = (String) message.getField(idField);
-        }
-        return id;
-    }
-
     protected String getTableName(Descriptors.Descriptor descriptor) {
         // Get the table name by removing "domain." from the full name and then by replacing all dots with underscores
         return descriptor.getFullName().replaceFirst("domain.", "").replaceAll("\\.", "_");
