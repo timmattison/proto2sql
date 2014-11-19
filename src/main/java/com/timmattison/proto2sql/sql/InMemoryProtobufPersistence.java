@@ -125,6 +125,8 @@ public class InMemoryProtobufPersistence extends AbstractProtobufPersistence imp
         for (Message existingMessage : existingList) {
             if (!existingMessage.getField(fieldDescriptor).equals(previousId)) {
                 newList.add(existingMessage);
+            } else {
+                newList.add(message);
             }
         }
 
