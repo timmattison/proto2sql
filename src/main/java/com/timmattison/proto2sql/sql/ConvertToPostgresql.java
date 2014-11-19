@@ -25,7 +25,6 @@ public class ConvertToPostgresql implements ConvertToSql {
     public List<String> generateSql(Message message) {
         // Create an output array list and an array list for our enums
         List<String> output = new ArrayList<String>();
-        List<String> embedded = new ArrayList<String>();
         List<String> enums = new ArrayList<String>();
 
         // Get the descriptor
@@ -35,7 +34,7 @@ public class ConvertToPostgresql implements ConvertToSql {
         String protobufTypeName = descriptor.getName();
 
         // Loop through all of the fields
-        StringBuilder stringBuilder = innerGenerateSql(embedded, enums, descriptor, protobufTypeName);
+        StringBuilder stringBuilder = innerGenerateSql(enums, descriptor, protobufTypeName);
 
         // Did we create any enums?
         if (enums.size() != 0) {
@@ -51,16 +50,10 @@ public class ConvertToPostgresql implements ConvertToSql {
             output.add(stringBuilder.toString());
         }
 
-        // Did we encounter any embedded messages?
-        if (embedded.size() != 0) {
-            // Yes, add them to the output after the table definition
-            output.addAll(embedded);
-        }
-
         return output;
     }
 
-    private StringBuilder innerGenerateSql(List<String> embedded, List<String> enums, Descriptors.Descriptor descriptor, String protobufTypeName) {
+    private StringBuilder innerGenerateSql(List<String> enums, Descriptors.Descriptor descriptor, String protobufTypeName) {
         // No parent
         StringBuilder stringBuilder = new StringBuilder();
         String separator = "";
