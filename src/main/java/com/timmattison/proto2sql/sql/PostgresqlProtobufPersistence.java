@@ -46,11 +46,8 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
 
     @Override
     public List<Message> innerSelect(String idName, String id, Message.Builder builder, String tableName) throws SQLException, JsonFormat.ParseException {
-        /**
-         * Get a connection to the database and prepare the statement but do not use getNewOrExistingConnection because
-         * we close the connection immediately.  Always get a new connection.
-         */
-        Connection connection = dataSource.getConnection();
+        // Get a connection to the database and prepare the statement.
+        Connection connection = getNewOrExistingConnection();
 
         try {
             // Get the result set
@@ -243,11 +240,8 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         insertSql.append(VALUES);
         insertSql.append(fieldPlaceholders);
 
-        /**
-         * Get a connection to the database and prepare the statement but do not use getNewOrExistingConnection because
-         * we close the connection immediately.  Always get a new connection.
-         */
-        Connection connection = dataSource.getConnection();
+        // Get a connection to the database and prepare the statement.
+        Connection connection = getNewOrExistingConnection();
 
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(insertSql.toString());
@@ -319,11 +313,8 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         // Add the WHERE clause
         idWhereClause(fieldDescriptor.getName(), updateSql);
 
-        /**
-         * Get a connection to the database and prepare the statement but do not use getNewOrExistingConnection because
-         * we close the connection immediately.  Always get a new connection.
-         */
-        Connection connection = dataSource.getConnection();
+        // Get a connection to the database and prepare the statement.
+        Connection connection = getNewOrExistingConnection();
 
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(updateSql.toString());
@@ -348,7 +339,15 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
     }
 
     private void closeIfNecessary(Connection connection) throws SQLException {
-        if (connection != null) {
+        // Is there a connection?
+        if (connection == null) {
+            // No, just return
+            return;
+        }
+
+        // Are we inside a transaction?
+        if (connection.getAutoCommit() == false) {
+            // No, we can close the connection
             connection.close();
         }
     }
