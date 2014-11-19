@@ -70,9 +70,7 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
 
             return messages;
         } finally {
-            if (connection != null) {
-                connection.close();
-            }
+            closeIfNecessary(connection);
         }
     }
 
@@ -273,9 +271,7 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
             // Execute the query
             preparedStatement.execute();
         } finally {
-            if (connection != null) {
-                connection.close();
-            }
+            closeIfNecessary(connection);
         }
     }
 
@@ -347,9 +343,13 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
             // Execute the query
             preparedStatement.execute();
         } finally {
-            if (connection != null) {
-                connection.close();
-            }
+            closeIfNecessary(connection);
+        }
+    }
+
+    private void closeIfNecessary(Connection connection) throws SQLException {
+        if (connection != null) {
+            connection.close();
         }
     }
 
