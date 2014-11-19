@@ -46,7 +46,10 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
 
     @Override
     public List<Message> innerSelect(String idName, String id, Message.Builder builder, String tableName) throws SQLException, JsonFormat.ParseException {
-        // Get a connection to the database and prepare the statement
+        /**
+         * Get a connection to the database and prepare the statement but do not use getNewOrExistingConnection because
+         * we close the connection immediately.  Always get a new connection.
+         */
         Connection connection = dataSource.getConnection();
 
         try {
@@ -242,7 +245,10 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         insertSql.append(VALUES);
         insertSql.append(fieldPlaceholders);
 
-        // Get a connection to the database and prepare the statement
+        /**
+         * Get a connection to the database and prepare the statement but do not use getNewOrExistingConnection because
+         * we close the connection immediately.  Always get a new connection.
+         */
         Connection connection = dataSource.getConnection();
 
         try {
@@ -317,7 +323,10 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         // Add the WHERE clause
         idWhereClause(fieldDescriptor.getName(), updateSql);
 
-        // Get a connection to the database and prepare the statement
+        /**
+         * Get a connection to the database and prepare the statement but do not use getNewOrExistingConnection because
+         * we close the connection immediately.  Always get a new connection.
+         */
         Connection connection = dataSource.getConnection();
 
         try {
@@ -434,7 +443,7 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         deleteSql.append(DELETE_FROM);
         deleteSql.append(protobufTypeName);
 
-        PreparedStatement preparedStatement = getConnection().prepareStatement(deleteSql.toString());
+        PreparedStatement preparedStatement = getNewOrExistingConnection().prepareStatement(deleteSql.toString());
         preparedStatement.execute();
     }
 
@@ -449,12 +458,12 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         idWhereClause(fieldDescriptor.getName(), deleteSql);
 
         // Get a connection to the database and prepare the statement
-        PreparedStatement preparedStatement = getConnection().prepareStatement(deleteSql.toString());
+        PreparedStatement preparedStatement = getNewOrExistingConnection().prepareStatement(deleteSql.toString());
         preparedStatement.setObject(1, message.getField(fieldDescriptor));
         preparedStatement.execute();
     }
 
-    private Connection getConnection() throws SQLException {
+    private Connection getNewOrExistingConnection() throws SQLException {
         if (currentConnection == null) {
             currentConnection = dataSource.getConnection();
         }
@@ -464,7 +473,7 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
 
     @Override
     public void startTransaction() throws SQLException {
-        getConnection().setAutoCommit(false);
+        getNewOrExistingConnection().setAutoCommit(false);
     }
 
     @Override
@@ -472,8 +481,8 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         throwExceptionIfTransactionNotStarted(ROLLBACK);
 
         // Rollback and close the connection
-        getConnection().rollback();
-        getConnection().close();
+        getNewOrExistingConnection().rollback();
+        getNewOrExistingConnection().close();
         currentConnection = null;
     }
 
@@ -482,8 +491,8 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         throwExceptionIfTransactionNotStarted(COMMIT);
 
         // Commit and close the connection
-        getConnection().commit();
-        getConnection().close();
+        getNewOrExistingConnection().commit();
+        getNewOrExistingConnection().close();
         currentConnection = null;
     }
 
