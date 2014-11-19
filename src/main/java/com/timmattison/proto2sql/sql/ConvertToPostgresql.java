@@ -62,10 +62,6 @@ public class ConvertToPostgresql implements ConvertToSql {
 
     private StringBuilder innerGenerateSql(List<String> embedded, List<String> enums, Descriptors.Descriptor descriptor, String protobufTypeName) {
         // No parent
-        return innerGenerateSql(null, embedded, enums, descriptor, protobufTypeName);
-    }
-
-    private StringBuilder innerGenerateSql(String parent, List<String> embedded, List<String> enums, Descriptors.Descriptor descriptor, String protobufTypeName) {
         StringBuilder stringBuilder = new StringBuilder();
         String separator = "";
 
@@ -114,23 +110,8 @@ public class ConvertToPostgresql implements ConvertToSql {
                 // No, create it now
                 stringBuilder.append("create table ");
 
-                if (parent != null) {
-                    stringBuilder.append(parent);
-                    stringBuilder.append("_");
-                }
-
                 stringBuilder.append(protobufTypeName);
                 stringBuilder.append(" (");
-
-                if (parent != null) {
-                    stringBuilder.append("\n  ");
-                    stringBuilder.append(parent);
-                    stringBuilder.append("_id ");
-                    stringBuilder.append(VARCHAR_255);
-                    stringBuilder.append(" primary key references ");
-                    stringBuilder.append(parent);
-                    stringBuilder.append("(id),");
-                }
             }
 
             // Add the separator, name, and type
