@@ -127,6 +127,38 @@ public abstract class TestProtobufPersistence {
     }
 
     @Test
+    public void testInsertThenUpdateInserted() throws SQLException, JsonFormat.ParseException {
+        TestProtobufs.SearchRequest searchRequest = createSearchRequest();
+        protobufPersistence.insert(searchRequest, searchRequest.getDescriptorForType().findFieldByNumber(1));
+
+        TestProtobufs.SearchRequest.Builder modifiedSearchRequestBuilder = searchRequest.toBuilder();
+        modifiedSearchRequestBuilder.setPageNumber(99999);
+        TestProtobufs.SearchRequest modifiedSearchRequest = modifiedSearchRequestBuilder.build();
+
+        protobufPersistence.update(modifiedSearchRequest, modifiedSearchRequest.getDescriptorForType().findFieldByNumber(1));
+
+        List<Message> results = protobufPersistence.select(null, null, TestProtobufs.SearchRequest.newBuilder());
+        messageNotPresent(searchRequest, results);
+        messagePresent(modifiedSearchRequest, results);
+    }
+
+    @Test
+    public void testInsertThenUpdateInsertedWithNewId() throws SQLException, JsonFormat.ParseException {
+        TestProtobufs.SearchRequest searchRequest = createSearchRequest();
+        protobufPersistence.insert(searchRequest, searchRequest.getDescriptorForType().findFieldByNumber(1));
+
+        TestProtobufs.SearchRequest.Builder modifiedSearchRequestBuilder = searchRequest.toBuilder();
+        modifiedSearchRequestBuilder.setQuery("NEW QUERY DATA");
+        TestProtobufs.SearchRequest modifiedSearchRequest = modifiedSearchRequestBuilder.build();
+
+        protobufPersistence.update(modifiedSearchRequest, modifiedSearchRequest.getDescriptorForType().findFieldByNumber(1), searchRequest.getQuery());
+
+        List<Message> results = protobufPersistence.select(null, null, TestProtobufs.SearchRequest.newBuilder());
+        messageNotPresent(searchRequest, results);
+        messagePresent(modifiedSearchRequest, results);
+    }
+
+    @Test
     public void testInsertThenDeleteInvalid() throws SQLException, JsonFormat.ParseException {
         TestProtobufs.SearchRequest searchRequest = createSearchRequest();
         TestProtobufs.SearchRequest searchRequest2 = createRandomSearchRequest();
