@@ -11,7 +11,6 @@ import org.postgresql.ds.PGSimpleDataSource;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Random;
 
@@ -20,24 +19,31 @@ import java.util.Random;
  */
 public class TestPostgresqlProtobufPersistence extends TestProtobufPersistence {
     private ConvertToSql convertToSql;
+    private PGSimpleDataSource dataSource;
 
     @Override
     protected void innerTeardown() {
-
+        initializeDatasource();
+        cleanDatabase(dataSource);
     }
 
     @Override
     protected void innerSetup() throws Exception {
         convertToSql = new ConvertToPostgresql();
 
-        PGSimpleDataSource dataSource = new PGSimpleDataSource();
-        dataSource.setServerName("localhost");
-        dataSource.setDatabaseName("proto2sql");
+        initializeDatasource();
 
+        cleanDatabase(dataSource);
         createDatabase(dataSource, TestProtobufs.SearchRequest.getDefaultInstance());
 
         protobufPersistence = new PostgresqlProtobufPersistence(dataSource);
         random = new Random(0);
+    }
+
+    private void initializeDatasource() {
+        dataSource = new PGSimpleDataSource();
+        dataSource.setServerName("localhost");
+        dataSource.setDatabaseName("proto2sql");
     }
 
     private void createDatabase(DataSource dataSource, final Message message) throws Exception {
@@ -58,10 +64,14 @@ public class TestPostgresqlProtobufPersistence extends TestProtobufPersistence {
             }
         };
 
+        cleanDatabase(dataSource);
+
+        jdbcMigration.migrate(dataSource.getConnection());
+    }
+
+    private void cleanDatabase(DataSource dataSource) {
         Flyway flyway = new Flyway();
         flyway.setDataSource(dataSource);
         flyway.clean();
-
-        jdbcMigration.migrate(dataSource.getConnection());
     }
 }
