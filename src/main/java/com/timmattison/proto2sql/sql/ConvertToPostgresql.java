@@ -54,7 +54,6 @@ public class ConvertToPostgresql implements ConvertToSql {
     }
 
     private StringBuilder innerGenerateSql(List<String> enums, Descriptors.Descriptor descriptor, String protobufTypeName) {
-        // No parent
         StringBuilder stringBuilder = new StringBuilder();
         String separator = "";
 
@@ -90,12 +89,6 @@ public class ConvertToPostgresql implements ConvertToSql {
             } else {
                 // Don't know how to handle this.  Fail.
                 throw new UnsupportedOperationException("Can't find type " + typeName);
-            }
-
-            // Did we get a SQL type?
-            if (sqlType == null) {
-                // No, this could be an embedded message.  Skip it.
-                continue;
             }
 
             // Did we already create the CREATE TABLE portion of this statement?
