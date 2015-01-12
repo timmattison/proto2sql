@@ -168,8 +168,9 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
         if (idName != null) {
             // Yes, build the parameterized WHERE clause
             stringBuilder.append(WHERE);
+            stringBuilder.append("\"");
             stringBuilder.append(idName);
-            stringBuilder.append(" = ");
+            stringBuilder.append("\" = ");
             stringBuilder.append(VARIABLE);
         }
     }
