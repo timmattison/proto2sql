@@ -4,6 +4,7 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.googlecode.protobuf.format.JsonFormat;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -88,4 +89,14 @@ public interface ProtobufPersistence {
      * @throws SQLException
      */
     public void commit() throws SQLException;
+
+    /**
+     * Converts a result set to a protobuf
+     *
+     * @param builder   a builder for the protobuf
+     * @param resultSet the result set with the current record selected (call next() before using this method!)
+     * @throws SQLException
+     * @throws JsonFormat.ParseException
+     */
+    public void resultSetToProtobuf(Message.Builder builder, ResultSet resultSet) throws SQLException, JsonFormat.ParseException;
 }

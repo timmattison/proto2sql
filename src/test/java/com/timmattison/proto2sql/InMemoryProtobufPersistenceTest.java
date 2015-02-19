@@ -7,7 +7,7 @@ import java.util.Random;
 /**
  * Created by timmattison on 11/18/14.
  */
-public class TestInMemoryProtobufPersistence extends TestProtobufPersistence {
+public class InMemoryProtobufPersistenceTest extends ProtobufPersistenceTest {
     @Override
     protected void innerTeardown() {
         // Do nothing

@@ -1,5 +1,6 @@
 package com.timmattison.proto2sql.sql;
 
+import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.google.protobuf.UnmodifiableLazyStringList;
@@ -115,6 +116,63 @@ public class PostgresqlProtobufPersistence extends AbstractProtobufPersistence i
                     JsonFormat.merge(resultSet.getString(fieldName), internalBuilder);
 
                     // Set the field to the built protobuf
+                    builder.setField(fieldDescriptor, internalBuilder.build());
+                }
+            } else {
+                // Could be a normal type or could be an array.  Get the object.
+                Object fieldObject = resultSet.getObject(fieldName);
+
+                // Is it an array?
+                if (fieldObject instanceof Jdbc4Array) {
+                    // Yes, it is an array.  Convert it and set it in the builder.
+                    Jdbc4Array jdbc4Array = (Jdbc4Array) fieldObject;
+                    List<Object> objectList = Arrays.asList((Object[]) jdbc4Array.getArray());
+                    builder.setField(fieldDescriptor, objectList);
+                } else {
+                    // No, just set it in the builder.
+                    builder.setField(fieldDescriptor, fieldObject);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void resultSetToProtobuf(Message.Builder builder, ResultSet resultSet) throws SQLException, JsonFormat.ParseException {
+        // Get the descriptor
+        Descriptors.Descriptor descriptor = builder.getDescriptorForType();
+
+        // Loop through all of the fields in this object
+        for (Descriptors.FieldDescriptor fieldDescriptor : descriptor.getFields()) {
+            // Get the field's name
+            String fieldName = fieldDescriptor.getName();
+
+            // Get the field's type
+            Descriptors.FieldDescriptor.Type fieldType = fieldDescriptor.getType();
+
+            // What type is this field?
+            if (fieldType.equals(Descriptors.FieldDescriptor.Type.ENUM)) {
+                // It is an enum.  Convert the string to the actual enum.
+                builder.setField(fieldDescriptor, fieldDescriptor.getEnumType().findValueByName(resultSet.getString(fieldName)));
+            } else if (fieldType.equals(Descriptors.FieldDescriptor.Type.MESSAGE)) {
+                // It is a message.  Convert it from JSON to a protobuf.
+
+                if (fieldDescriptor.isRepeated()) {
+                    // Could be a normal type or could be an array.  Get the object.
+                    Object fieldObject = resultSet.getObject(fieldName);
+
+                    Jdbc4Array jdbc4Array = (Jdbc4Array) fieldObject;
+                    List<Object> objectList = Arrays.asList((Object[]) jdbc4Array.getArray());
+
+                    Message.Builder internalBuilder = builder.newBuilderForField(fieldDescriptor);
+
+                    for (Object jsonObject : objectList) {
+                        internalBuilder.clear();
+                        JsonFormat.merge((String) jsonObject, internalBuilder);
+                        builder.addRepeatedField(fieldDescriptor, internalBuilder.build());
+                    }
+                } else {
+                    DescriptorProtos.FieldDescriptorProto.Builder internalBuilder = fieldDescriptor.toProto().newBuilderForType();
+                    JsonFormat.merge(resultSet.getString(fieldName), internalBuilder);
                     builder.setField(fieldDescriptor, internalBuilder.build());
                 }
             } else {
