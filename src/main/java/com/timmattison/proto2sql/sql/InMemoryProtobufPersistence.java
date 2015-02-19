@@ -4,6 +4,7 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.googlecode.protobuf.format.JsonFormat;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -146,5 +147,10 @@ public class InMemoryProtobufPersistence extends AbstractProtobufPersistence imp
     @Override
     public void commit() throws SQLException {
         // Do nothing
+    }
+
+    @Override
+    public void resultSetToProtobuf(Message.Builder builder, ResultSet resultSet) throws SQLException, JsonFormat.ParseException {
+        throw new UnsupportedOperationException("This method is not relevant in the in-memory implementation");
     }
 }
