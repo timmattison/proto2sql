@@ -17,7 +17,7 @@ import java.util.Random;
 /**
  * Created by timmattison on 11/18/14.
  */
-public class TestPostgresqlProtobufPersistence extends TestProtobufPersistence {
+public class PostgresqlProtobufPersistenceIT extends ProtobufPersistenceTest {
     private ConvertToSql convertToSql;
     private PGSimpleDataSource dataSource;
 

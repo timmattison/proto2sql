@@ -17,7 +17,7 @@ import java.util.Random;
 /**
  * Created by timmattison on 11/14/14.
  */
-public abstract class TestProtobufPersistence {
+public abstract class ProtobufPersistenceTest {
     protected ProtobufPersistence protobufPersistence;
     protected Random random;
     private final int insertCount = 100;
